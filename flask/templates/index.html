@@ -66,9 +66,22 @@
             const maxAccelZChange = Math.max(...accelZValues) - Math.min(...accelZValues);
 
             if ((maxAccelXChange > 0.5 || maxAccelYChange > 0.5 || maxAccelZChange > 0.5) && (maxLight - minLight > 100)) {
-                alert("Warning: High Probability of Seizure");
+                sendAlertToArduino();
+                alertMessageElement.innerText = "Warning: High Probability of Seizure";
+            }
+
+            else{
+                alertMessageElement.innerText = "Good";
             }
         }
+
+        function sendAlertToArduino() {
+            fetch('/alert', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: 'High Probability of Seizure' })
+        });
+}
 
         setInterval(fetchSensorData, 250); // Fetch data every 1/4 second
     </script>
@@ -89,6 +102,9 @@
     <h2>Light Sensor Value: <span id="light-value">Loading...</span></h2>
     
     <h2>Sound Sensor Value: <span id="sound-value">Loading...</span></h2>
+
+    <h2 id="alert-message" style="color: red; font-weight: bold;"></h2>
+    <h2>Status: <span id="alert-message style=color: red; font-weight: bold"> Good </span></h2>
     
 </body>
 </html>

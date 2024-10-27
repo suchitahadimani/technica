@@ -57,12 +57,25 @@ def hello_world():
             ser.write(b'H')  # Send 'H' to turn on the LED
         elif request.form['submit'] == 'Turn Off':
             ser.write(b'L')  # Send 'L' to turn off the LED
+    
+    return render_template('index.html', author=author) 
 
-    return render_template('index.html', author=author)
 
 
-def sensor():
-    sensor_data = read_sensors()
+
+@app.route('/alert', methods=['POST'])
+def send_alert():
+    data = request.get_json()
+    message = data.get('message', 'Alert')
+
+    try:
+        ser.write(b'A')  # Send 'A' as the command to display alert
+        time.sleep(0.1)
+        ser.write(message.encode('utf-8'))  # Send the alert message text
+        return jsonify({"status": "Alert sent to Arduino"}), 200
+    except Exception as e:
+        print(f"Error sending alert to Arduino: {e}")
+        return jsonify({"status": "Failed to send alert"}), 500
     
     
 
