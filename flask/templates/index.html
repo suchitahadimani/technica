@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Arduino Control</title>
+    <link rel="stylesheet" href="styles.css">
+    <script>
+        const lightValues = [];
+        const accelXValues = [];
+        const accelYValues = [];
+        const accelZValues = [];
+        const maxHistory = 3; // Track the last 3 seconds of data
+        let historyCounter = 0;
+
+        function fetchSensorData() {
+            fetch('/sensor')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('accel-x').innerText = data.accel_x;
+                    document.getElementById('accel-y').innerText = data.accel_y;
+                    document.getElementById('accel-z').innerText = data.accel_z;
+                    document.getElementById('light-value').innerText = data.light;
+                    document.getElementById('sound-value').innerText = data.sound;
+
+                    // Update history every second
+                    if (historyCounter % 4 === 0) { // Every second (4 * 250ms)
+                        updateHistory(data);
+                    }
+
+                    historyCounter++;
+                })
+                .catch(error => console.error('Error fetching sensor data:', error));
+        }
+
+        function updateHistory(data) {
+            const currentAccelX = parseFloat(data.accel_x);
+            const currentAccelY = parseFloat(data.accel_y);
+            const currentAccelZ = parseFloat(data.accel_z);
+            const currentLightValue = parseInt(data.light);
+
+            // Update acceleration values history
+            accelXValues.push(currentAccelX);
+            accelYValues.push(currentAccelY);
+            accelZValues.push(currentAccelZ);
+
+            // Keep only the last 3 seconds of acceleration data
+            if (accelXValues.length > maxHistory) accelXValues.shift();
+            if (accelYValues.length > maxHistory) accelYValues.shift();
+            if (accelZValues.length > maxHistory) accelZValues.shift();
+
+            // Update light values history
+            lightValues.push(currentLightValue);
+
+            // Keep only the last 3 seconds of light data
+            if (lightValues.length > maxHistory) lightValues.shift();
+
+            checkForAlerts();
+        }
+
+        function checkForAlerts() {
+            const minLight = Math.min(...lightValues);
+            const maxLight = Math.max(...lightValues);
+
+            const maxAccelXChange = Math.max(...accelXValues) - Math.min(...accelXValues);
+            const maxAccelYChange = Math.max(...accelYValues) - Math.min(...accelYValues);
+            const maxAccelZChange = Math.max(...accelZValues) - Math.min(...accelZValues);
+
+            if ((maxAccelXChange > 0.5 || maxAccelYChange > 0.5 || maxAccelZChange > 0.5) && (maxLight - minLight > 100)) {
+                alert("Warning: High Probability of Seizure");
+            }
+        }
+
+        setInterval(fetchSensorData, 250); // Fetch data every 1/4 second
+    </script>
+</head>
+<body>
+    <h1>Welcome {{ author }}</h1>
+    
+    <form method="post">
+        <button name="submit" value="Turn On">Turn LED On</button>
+        <button name="submit" value="Turn Off">Turn LED Off</button>
+    </form>
+
+    <h2>Accelerometer Data:</h2>
+    <p>X: <span id="accel-x">Loading...</span></p>
+    <p>Y: <span id="accel-y">Loading...</span></p>
+    <p>Z: <span id="accel-z">Loading...</span></p>
+
+    <h2>Light Sensor Value: <span id="light-value">Loading...</span></h2>
+    
+    <h2>Sound Sensor Value: <span id="sound-value">Loading...</span></h2>
+    
+</body>
+</html>
